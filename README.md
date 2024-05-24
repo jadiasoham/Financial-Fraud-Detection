@@ -1,5 +1,6 @@
 # Introduction to the Fraud Analytics Dataset
- The dataset used in this analysis is sourced from an Excel file named `Fraud Analytics Dataset.xlsx`. This dataset contains transaction data relevant to fraud detection and analytics. Each row represents a unique transaction and includes various attributes related to the transaction details, parties involved, and their respective information. Below is a brief overview of the key columns in the dataset:
+ The dataset used in this analysis is sourced from an Excel file named `Fraud Analytics Dataset.xlsx`. The dataset comprise 55672 rows and 36 columns.
+ This dataset contains transaction data relevant to fraud detection and analytics. Each row represents a unique transaction and includes various attributes related to the transaction details, parties involved, and their respective information. Below is a brief overview of the key columns in the dataset:
 
 - `txn_id`: Unique identifier for each transaction.
 - `dt_txn_comp`: Date when the transaction was completed.
@@ -48,4 +49,4 @@
 ---
 ## Acknowledgments
 
-- **Dataset Source**: The Excel file containing the dataset was sourced from [Super AI](https://getsuper.ai/post).
+- **Dataset Source**: The Excel file containing the dataset was sourced from [Super AI](https://www.getsuper.ai/post/online-fraud-analytics-python-use-case).
