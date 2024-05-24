@@ -39,3 +39,13 @@
 - `time_of_day`: Time of day when the transaction was completed.
 ---
 ### The objective of this analysis is to clean and preprocess the data, engineer relevant features, and prepare it for further analysis and predictive modeling, particularly focusing on identifying fraudulent transactions.
+---
+## Usage Instructions
+
+- **Environment Setup**:
+  ```sh
+  pip install -r requirements.txt
+---
+## Acknowledgments
+
+- **Dataset Source**: The Excel file containing the dataset was sourced from [Super AI](https://getsuper.ai/post).
