@@ -31,8 +31,8 @@
 - `beneficiary_mcc_code`: Merchant Category Code for the beneficiary.
 - `remitter_mcc_code`: Merchant Category Code for the remitter.
 - `custref_transaction_ref`: Customer reference transaction identifier.
-- `cred_type`: Type of credential used.
-- `cred_subtype`: Subtype of the credential used.
+- `cred_type`: Type of credit used.
+- `cred_subtype`: Subtype of the credit used.
 - `payer_app_id`: Identifier of the payer's application.
 - `payee_app_id`: Identifier of the payee's application.
 - `initiation_mode`: Mode of transaction initiation.
