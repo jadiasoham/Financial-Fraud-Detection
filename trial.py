@@ -23,9 +23,9 @@ class PreProcessing:
     def open_file(self) -> pd.DataFrame:
         file = self.file
         extension = pathlib.Path(file).suffix
-        if extension == '.xlsx' or '.xls':
+        if extension in ['.xlsx' or '.xls']:
             return pd.read_excel(file)
-        elif extension == '.csv':
+        elif extension in ['.csv']:
             return pd.read_csv(file)
         else:
             raise ValueError("Invalid File Format")
