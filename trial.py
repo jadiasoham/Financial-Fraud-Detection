@@ -1,4 +1,4 @@
-from typing import Sequence, Optional, List
+from typing import Sequence, Optional, List, Dict
 import pathlib
 import pandas as pd
 import numpy as np
@@ -7,7 +7,6 @@ from sklearn.pipeline import make_pipeline
 from imblearn.over_sampling import SMOTE
 from matplotlib import pyplot as plt
 import seaborn as sns
-sns.set_theme('notebook')
 
 # Constants:
 FRAUD_TAG = 'Fraudulent Transaction' # Identification tag for fraudulent transactions
@@ -117,3 +116,135 @@ class PreProcessing:
         df_with_targets = self.generate_targets(df= df)
         df_with_targets = df_with_targets.drop(columns= COL_WITH_FRAUD_TAG)
         return df_with_targets
+    
+class Visualization:
+    def __init__(self, df: pd.DataFrame) -> None:
+        self.data = df
+        self.style_dict = {'grid.linestyle': '-', 'grid.color': 'lightgray'}
+        sns.set_theme(context= 'notebook', style= 'whitegrid', palette= 'deep',
+                      color_codes= True, rc= self.style_dict)
+        
+    def line_graph(
+            self, x: str, y: str,
+            title: Optional[str] = None,
+            xlabel: Optional[str] = None, ylabel: Optional[str] = None,
+            xticks: Optional[Dict] = None, yticks: Optional[Dict] = None,
+            color: Optional[str] = None, marker: bool = False
+        ) -> None:
+        df = self.data
+        plt.figure()
+        sns.lineplot(x= x, y= y, data= df, hue= color, markers= 'o' if marker else None)
+        if title:
+            plt.title(title)
+        if xlabel:
+            plt.xlabel(xlabel)
+        if ylabel:
+            plt.ylabel(ylabel)
+        
+        if xticks:
+            if 'tickvals' in xticks:
+                plt.xticks(ticks= xticks['tickvals'], labels= xticks.get('labels', xticks['tickvals']))
+            if 'tickangle' in xticks:
+                plt.xticks(rotation= xticks['tickangle'])
+        if yticks:
+            if 'tickvals' in yticks:
+                plt.yticks(ticks=yticks['tickvals'], labels=yticks.get('labels', yticks['tickvals']))
+            if 'tickangle' in yticks:
+                plt.yticks(rotation=yticks['tickangle'])
+
+        plt.show()
+
+    def bar_plot(
+            self, x: str, y: str,
+            title: Optional[str] = None,
+            xlabel: Optional[str] = None, ylabel: Optional[str] = None,
+            color: Optional[str] = None,
+            xticks: Optional[Dict] = None, yticks: Optional[Dict] = None
+        ) -> None:
+        df = self.data
+        plt.figure()
+        df = sns.barplot(data= df, x= x, y= y, hue= color)
+
+        if title:
+            plt.title(title)
+        if xlabel:
+            plt.xlabel(xlabel)
+        if ylabel:
+            plt.ylabel(ylabel)
+
+        if xticks:
+            if 'tickvals' in xticks:
+                plt.xticks(ticks=xticks['tickvals'], labels=xticks.get('label', xticks['tickvals']))
+            if 'tickangle' in xticks:
+                plt.xticks(rotation=xticks['tickangle'])
+        if yticks:
+            if 'tickvals' in yticks:
+                plt.yticks(ticks=yticks['tickvals'], labels=yticks.get('label', yticks['tickvals']))
+            if 'tickangle' in yticks:
+                plt.yticks(rotation=yticks['tickangle'])
+
+        plt.show()
+
+    def scatter_plot(
+            self, x: str, y: str,
+            title: Optional[str] = None,
+            xlabel: Optional[str] = None, ylabel: Optional[str] = None,
+            color: Optional[str] = None, size: Optional[str] = None, style: Optional[str] = None,
+            xticks: Optional[Dict] = None, yticks: Optional[Dict] = None
+        ) -> None:
+        df = self.data
+        plt.figure()
+
+        sns.scatterplot(data= df, x= x, y= y, hue= color, size= size, style= style)
+
+        if title:
+            plt.title(title)
+        if xlabel:
+            plt.xlabel(xlabel)
+        if ylabel:
+            plt.ylabel(ylabel)
+
+        if xticks:
+            if 'tickvals' in xticks:
+                plt.xticks(ticks=xticks['tickvals'], labels=xticks.get('labels', xticks['tickvals']))
+            if 'tickangle' in xticks:
+                plt.xticks(rotation=xticks['tickangle'])
+        if yticks:
+            if 'tickvals' in yticks:
+                plt.yticks(ticks=yticks['tickvals'], labels=yticks.get('labels', yticks['tickvals']))
+            if 'tickangle' in yticks:
+                plt.yticks(rotation=yticks['tickangle'])
+
+        plt.show()
+
+    def histogram(
+            self, x: str,
+            title: Optional[str] = None,
+            xlabel: Optional[str] = None, ylabel: Optional[str] = None,
+            color: Optional[str] = None,
+            xticks: Optional[Dict] = None, yticks: Optional[Dict] = None
+            ) -> None:
+        df = self.data
+        plt.figure()
+
+        sns.histplot(df[x], color=color)
+
+        if title:
+            plt.title(title)
+        if xlabel:
+            plt.xlabel(xlabel)
+        if ylabel:
+            plt.ylabel(ylabel)
+
+        if xticks:
+            if 'tickvals' in xticks:
+                plt.xticks(ticks=xticks['tickvals'], labels=xticks.get('labels', xticks['tickvals']))
+            if 'tickangle' in xticks:
+                plt.xticks(rotation=xticks['tickangle'])
+        if yticks:
+            if 'tickvals' in yticks:
+                plt.yticks(ticks=yticks['tickvals'], labels=yticks.get('labels', yticks['tickvals']))
+            if 'tickangle' in yticks:
+                plt.yticks(rotation=yticks['tickangle'])
+
+        plt.show()
