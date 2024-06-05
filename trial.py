@@ -413,6 +413,6 @@ class Visualization:
         logging.info(f"All plots saved in {filename}.")
 
 
-class PrepareFeatures:
+class PrepareFeatures(Preprocessing):
     def __init__(self) -> None:
-        pass
+        super().__init__()
