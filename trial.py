@@ -19,8 +19,9 @@ FRAUD_TAG = 'Fraudulent Transaction' # Identification tag for fraudulent transac
 COL_WITH_FRAUD_TAG = 'txn_subtype' # Name of the column containing the `FRAUD_TAG`.
 
 
-class PreProcessing:
+class Preprocessing:
     def __init__(self, file_path: str) -> None:
+        logging.info("Initializing Preprocessing...")
         self.file = file_path
         self.data = self.open_file()
         self.fraud_data = self.generate_fraud_data()
@@ -123,6 +124,7 @@ class PreProcessing:
         df_with_targets = df_with_targets.drop(columns= COL_WITH_FRAUD_TAG)
         return df_with_targets
     
+
 class Visualization:
     def __init__(self, df: pd.DataFrame) -> None:
         self.data = df
@@ -265,5 +267,134 @@ class Visualization:
         return viz_dict
         
     def create_plots(self) -> List[go.Figure]:
-        pass
+        logging.info("Extracting relevant dataframes from master dataframe.")
+        df_dict = self.df_viz_dict
+        df1 = df_dict["df1"]
+        df2 = df_dict["df2"]
+        df3 = df_dict["df3"]
+        df4 = df_dict["df4"]
+        df5 = df_dict["df5"]
+        df6 = df_dict["df6"]
+        df7 = df_dict["df7"]
+        df8 = df_dict["df8"]
+        df9 = df_dict["df9"]
+        segments = df_dict["segments"]
+
+        logging.info("Initializing a list to store all the plots.")
+        figures = []
+        # plot 1:
+        logging.info("Creating plot 1")
+        fig1 = px.bar(data_frame=df1,
+                      x='loss_amount_(in_lakhs)',
+                      y='payee_state',
+                      color='loss_amount_(in_lakhs)',
+                      title='Loss Amount By States')
+        fig1.update_layout(xaxis_title='Loss Amount (Lakh Rs.)', yaxis_title='Payee State')
+        figures.append(fig1)
+        # Plot 2
+        logging.info("Creating plot 2")
+        df1_top10 = df1.nlargest(n=10, columns='loss_amount_(in_lakhs)').sort_values(by='loss_amount_(in_lakhs)',
+                                                                                     ascending=False)
+        fig2 = px.bar(data_frame=df1_top10,
+                      x='loss_amount_(in_lakhs)',
+                      y='payee_state',
+                      color='loss_amount_(in_lakhs)',
+                      title='Top 10 States By Loss Amount')
+        fig2.update_layout(xaxis_title='Loss Amount (Lakh Rs.)', yaxis_title='Payee State')
+        figures.append(fig2)
+        # Plot 3
+        logging.info("Creating plot 3")
+        fig3 = px.line(data_frame=df2,
+                       x='month', y='loss_amt_(in_lakhs)',
+                       title='Loss Amount Monthly Trend (for each Year)',
+                       color='year', markers=True)
+        fig3.update_layout(xaxis_title='Month', yaxis_title='Loss Amount (Lakh Rs.)')
+        fig3.update_xaxes(tickvals=df2['month'], ticktext=calendar.month_abbr[1:13])
+        figures.append(fig3)
+        # Plot 4
+        logging.info("Creating plot 4")
+        fig4 = px.line(data_frame=df3,
+                       x='month', y='loss_amt_(in_lakhs)',
+                       title='Loss Amount Monthly Trend (Cumulative)',
+                       markers=True)
+        fig4.update_layout(xaxis_title='Month', yaxis_title='Loss Amount (Lakh Rs.)')
+        fig4.update_xaxes(tickvals=df3['month'], ticktext=calendar.month_abbr[1:13])
+        figures.append(fig4)
+        # Plot 5
+        logging.info("Creating plot 5")
+        fig5 = px.line(data_frame=df4,
+                       x='month', y='fraud_counts',
+                       title='Fraud Incidents Monthly Trend (for each Year)',
+                       color='year', markers=True)
+        fig5.update_layout(xaxis_title='Months', yaxis_title='Fraud Incidents')
+        fig5.update_xaxes(tickvals=df4['month'], ticktext=calendar.month_abbr[1:13])
+        figures.append(fig5)
+        # Plot 6
+        logging.info("Creating plot 6")
+        fig6 = px.line(data_frame=df5,
+                       x='month', y='fraud_counts',
+                       title='Fraud Incidents Monthly Trend (Cumulative)',
+                       markers=True)
+        fig6.update_layout(xaxis_title='Month', yaxis_title='Fraud Incidents')
+        fig6.update_xaxes(tickvals=df5['month'], ticktext=calendar.month_abbr[1:13])
+        figures.append(fig6)
+        # Plot 7
+        logging.info("Creating plot 7")
+        fig7 = px.bar(data_frame=df6,
+                      x='cred_type', y='loss_amt_(in_lakhs)',
+                      title='Loss Amount by Credit type',
+                      color='loss_amt_(in_lakhs)')
+        fig7.update_layout(xaxis_title='Credit Account Type', yaxis_title='Loss Amount (Lakh Rs.)')
+        figures.append(fig7)
+        # Plot 8
+        logging.info("Creating plot 8")
+        fig8 = px.bar(data_frame=df7,
+                      x='time_of_day', y='loss_amt_(in_lakhs)',
+                      title='Fraudulent Transactions by Time of Day',
+                      color='loss_amt_(in_lakhs)')
+        fig8.update_layout(xaxis_title='Time Of Day', yaxis_title='Loss Amount (Lakh Rs.)')
+        fig8.update_xaxes(tickvals=segments, ticktext=segments)
+        figures.append(fig8)
+        # Plot 9
+        logging.info("Creating plot 9")
+        fig9 = px.bar(data_frame=df8,
+                      x='time_of_day', y='diff_amt_(in_lakhs)',
+                      title='Difference Amount by Time of Day',
+                      color='diff_amt_(in_lakhs)')
+        fig9.update_layout(xaxis_title='Time Of Day', yaxis_title='Difference Amount (Lakh Rs.)')
+        fig9.update_xaxes(tickvals=segments, ticktext=segments)
+        figures.append(fig9)
+        # Plot 10
+        logging.info("Creating plot 10")
+        trace1 = go.Bar(
+            x=df9['time_of_day'],
+            y=df9['underpayments'],
+            name='Underpayments in Lakhs',
+            marker=dict(color='red')
+        )
+        trace2 = go.Bar(
+            x=df9['time_of_day'],
+            y=df9['overpayments'],
+            name='Overpayments in Lakhs',
+            marker=dict(color='blue')
+        )
+        layout = go.Layout(
+            title='Underpayments and Overpayments by Time of Day',
+            xaxis=dict(title='Time of Day'),
+            yaxis=dict(title='Amount (in Lakhs)'),
+            barmode='group'
+        )
+        fig10 = go.Figure(data=[trace1, trace2], layout=layout)
+        figures.append(fig10)
+        logging.info("All plots created and saved to list.")
+        return figures
     
+    def save_plots(self, filename: str) -> None:
+        figures = self.plots
+
+        with open(filename, 'w') as file:
+            for fig in figures:
+                logging.info(f"Saving {fig} to {filename}.")
+                file.write(pyo.plot(fig, include_plotlyjs= False, output_type= 'div'))
+        print(f"All plots have been saved to {filename}.")
+        logging.info(f"All plots have been saved to {filename}.")
