@@ -1,12 +1,18 @@
 from typing import Sequence, Optional, List, Dict
 import pathlib
+import calendar
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from imblearn.over_sampling import SMOTE
-from matplotlib import pyplot as plt
-import seaborn as sns
+from plotly import express as px
+from plotly import offline as pyo
+from plotly import graph_objects as go
+from plotly import io
+import logging
+
+logging.basicConfig(level= logging.INFO, format= '%(asctime)s - %(levelname)s - %(message)s')
 
 # Constants:
 FRAUD_TAG = 'Fraudulent Transaction' # Identification tag for fraudulent transactions
@@ -120,131 +126,144 @@ class PreProcessing:
 class Visualization:
     def __init__(self, df: pd.DataFrame) -> None:
         self.data = df
-        self.style_dict = {'grid.linestyle': '-', 'grid.color': 'lightgray'}
-        sns.set_theme(context= 'notebook', style= 'whitegrid', palette= 'deep',
-                      color_codes= True, rc= self.style_dict)
-        
+        self.df_viz_dict = self.prepare_df()
+        self.plots = self.create_plots()
+
+    @staticmethod
     def line_graph(
-            self, x: str, y: str,
-            title: Optional[str] = None,
-            xlabel: Optional[str] = None, ylabel: Optional[str] = None,
-            xticks: Optional[Dict] = None, yticks: Optional[Dict] = None,
-            color: Optional[str] = None, marker: bool = False
-        ) -> None:
-        df = self.data
-        plt.figure()
-        sns.lineplot(x= x, y= y, data= df, hue= color, markers= 'o' if marker else None)
-        if title:
-            plt.title(title)
+        df: pd.DataFrame, x: str, y: str,
+        title: Optional[str] = None,
+        xlabel: Optional[str] = None, ylabel: Optional[str] = None,
+        xticks: Optional[Dict] = None, yticks: Optional[Dict] = None,
+        color: Optional[str] = None, marker: bool = True
+    ) -> None:
+        if not color:
+            fig = px.line(data_frame= df, x= x, y= y, title= title, markers= marker)
+        fig = px.line(data_frame=df, x= x, y= y, title= title, color= color, markers= marker)
         if xlabel:
-            plt.xlabel(xlabel)
+            fig.update_layout(xaxis_title= xlabel)
         if ylabel:
-            plt.ylabel(ylabel)
+            fig.update_layout(yaxis_title= ylabel)
+        if xticks:
+            tickvals = xticks.get('tickvals')
+            labels = xticks.get('labels', tickvals) if tickvals else None
+            if tickvals:
+                fig.update_xaxes(tickvals= tickvals, ticktext= labels)
+            if 'rotation' in xticks:
+                fig.update_xaxes(tickangle= xticks['rotation'])
+
+        if yticks:
+            tickvals = yticks.get('tickvals')
+            labels = yticks.get('labels', tickvals) if tickvals else None
+            if tickvals:
+                fig.update_yaxes(tickvals= tickvals, ticktext= labels)
+            if 'rotation' in yticks:
+                fig.update_yaxes(tickangle= yticks['rotation'])
+
+        fig.show()
+
+    @staticmethod
+    def bar_graph(
+        dataset: pd.DataFrame, x: str, y: str,
+        title: Optional[str] = None,
+        xlabel: Optional[str] = None, ylabel: Optional[str] = None,
+        xticks: Optional[Dict] = None, yticks: Optional[Dict] = None,
+        color: Optional[str] = None
+    ) -> None:
+        if not color:
+            fig = px.bar(data_frame=dataset, x=x, y=y, title=title)
+        fig = px.bar(data_frame=dataset, x=x, y=y, title=title, color=color)
+        if xlabel:
+            fig.update_layout(xaxis_title=xlabel)
+        if ylabel:
+            fig.update_layout(yaxis_title=ylabel)
+
+        if xticks:
+            tickvals = xticks.get('tickvals')
+            labels = xticks.get('labels', tickvals) if tickvals else None
+            if tickvals:
+                fig.update_xaxes(tickvals=tickvals, ticktext=labels)
+            if 'rotation' in xticks:
+                fig.update_xaxes(tickangle=xticks['rotation'])
+
+        if yticks:
+            tickvals = yticks.get('tickvals')
+            labels = yticks.get('labels', tickvals) if tickvals else None
+            if tickvals:
+                fig.update_yaxes(tickvals=tickvals, ticktext=labels)
+            if 'rotation' in yticks:
+                fig.update_yaxes(tickangle=yticks['rotation'])
+
+        fig.show()
+
+    def prepare_df(self) -> Dict[str, Optional[pd.DataFrame]]:
+        fraudulent_data = self.data
+        segments = ['EarlyMorning', 'Morning', 'LateMorning',
+                    'Afternoon', 'LateAfternoon', 'Evening',
+                    'Night', 'LateNight']
+        # (loss_amt vs. payee_state)/ 2 plots
+        # df1:
+        df1 = fraudulent_data.groupby('payee_state')['payee_settlement_amount'].sum().reset_index()
+        df1['loss_amount_(in_lakhs)'] = np.round(df1.payee_settlement_amount / 1e5, 2)
+        df1.drop(columns='payee_settlement_amount', inplace=True)
+        df1.sort_values(by='loss_amount_(in_lakhs)', ascending=False, inplace=True)
+        # (loss amount monthly trends separately and cumulatively)/ 4 plots
+        # df2:
+        df2 = fraudulent_data.groupby(['year', 'month'])['payee_settlement_amount'].sum().reset_index()
+        df2['loss_amt_(in_lakhs)'] = np.round(df2['payee_settlement_amount'] / 1e5, 2)
+        df2.drop(columns='payee_settlement_amount', inplace=True)
+        df2.sort_values(by='loss_amt_(in_lakhs)', ascending=False)
+        # df3:
+        df3 = fraudulent_data.groupby('month')['payee_settlement_amount'].sum().reset_index()
+        df3['loss_amt_(in_lakhs)'] = np.round(df3['payee_settlement_amount'] / 1e5, 2)
+        df3.drop(columns='payee_settlement_amount', inplace=True)
+        df3.sort_values(by='loss_amt_(in_lakhs)', ascending=False)
+        # df4:
+        df4 = fraudulent_data.groupby(['year', 'month']).size().reset_index(name='fraud_counts')
+        # df5:
+        df5 = fraudulent_data.groupby('month').size().reset_index(name='fraud_counts')
+        # (loss amount by credit account type)/ 1 plot
+        # df6:
+        df6 = fraudulent_data.groupby('cred_type')['payee_settlement_amount'].sum().reset_index()
+        df6['loss_amt_(in_lakhs)'] = np.round(df6.payee_settlement_amount / 1e5, 2)
+        df6.drop(columns='payee_settlement_amount', inplace=True)
+        # (loss amount by time of day)/ 3 plots
+        # df7:
+        df7 = fraudulent_data.groupby('time_of_day')['payee_settlement_amount'].sum().reset_index()
+        df7['loss_amt_(in_lakhs)'] = np.round(df7.payee_settlement_amount / 1e5, 2)
+        df7.drop(columns='payee_settlement_amount', inplace=True)
+        df7['time_of_day'] = pd.Categorical(df7['time_of_day'], categories=segments, ordered=True)
+        df7.sort_values('time_of_day', inplace=True)
+        # df8:
+        df8 = fraudulent_data.groupby('time_of_day')['difference_amount'].sum().reset_index()
+        df8['diff_amt_(in_lakhs)'] = np.round(df8['difference_amount'] / 1e5, 2)
+        df8.drop(columns='difference_amount', inplace=True)
+        df8['time_of_day'] = pd.Categorical(df8['time_of_day'], categories=segments, ordered=True)
+        df8.sort_values('time_of_day', inplace=True)
+        # df9:
+        underpayments = fraudulent_data[fraudulent_data.difference_amount > 0].groupby('time_of_day')[
+            'difference_amount'].sum().reset_index()
+        underpayments['difference_amount_(in_lakhs)'] = np.round(underpayments.difference_amount / 1e5, 3)
+        underpayments.drop(columns=['difference_amount'], inplace=True)
+
+        overpayments = fraudulent_data[fraudulent_data.difference_amount < 0].groupby('time_of_day')[
+            'difference_amount'].sum().reset_index()
+        overpayments['difference_amount_(in_lakhs)'] = np.round(overpayments.difference_amount / 1e5, 3)
+        overpayments.drop(columns=['difference_amount'], inplace=True)
+
+        underpayments.rename(columns={'difference_amount_(in_lakhs)': 'underpayments'}, inplace=True)
+        overpayments.rename(columns={'difference_amount_(in_lakhs)': 'overpayments'}, inplace=True)
+
+        df9 = pd.merge(underpayments, overpayments, on='time_of_day', how='outer').fillna(0)
+
+        df9['time_of_day'] = pd.Categorical(df9['time_of_day'], categories=segments, ordered=True)
+        df9.sort_values('time_of_day', inplace=True)
+        viz_dict = {'df1': df1, 'df2': df2, 'df3': df3,
+                    'df4': df4, 'df5': df5, 'df6': df6,
+                    'df7': df7, 'df8': df8, 'df9': df9,
+                    'segments': segments}
+        return viz_dict
         
-        if xticks:
-            if 'tickvals' in xticks:
-                plt.xticks(ticks= xticks['tickvals'], labels= xticks.get('labels', xticks['tickvals']))
-            if 'tickangle' in xticks:
-                plt.xticks(rotation= xticks['tickangle'])
-        if yticks:
-            if 'tickvals' in yticks:
-                plt.yticks(ticks=yticks['tickvals'], labels=yticks.get('labels', yticks['tickvals']))
-            if 'tickangle' in yticks:
-                plt.yticks(rotation=yticks['tickangle'])
-
-        plt.show()
-
-    def bar_plot(
-            self, x: str, y: str,
-            title: Optional[str] = None,
-            xlabel: Optional[str] = None, ylabel: Optional[str] = None,
-            color: Optional[str] = None,
-            xticks: Optional[Dict] = None, yticks: Optional[Dict] = None
-        ) -> None:
-        df = self.data
-        plt.figure()
-        df = sns.barplot(data= df, x= x, y= y, hue= color)
-
-        if title:
-            plt.title(title)
-        if xlabel:
-            plt.xlabel(xlabel)
-        if ylabel:
-            plt.ylabel(ylabel)
-
-        if xticks:
-            if 'tickvals' in xticks:
-                plt.xticks(ticks=xticks['tickvals'], labels=xticks.get('label', xticks['tickvals']))
-            if 'tickangle' in xticks:
-                plt.xticks(rotation=xticks['tickangle'])
-        if yticks:
-            if 'tickvals' in yticks:
-                plt.yticks(ticks=yticks['tickvals'], labels=yticks.get('label', yticks['tickvals']))
-            if 'tickangle' in yticks:
-                plt.yticks(rotation=yticks['tickangle'])
-
-        plt.show()
-
-    def scatter_plot(
-            self, x: str, y: str,
-            title: Optional[str] = None,
-            xlabel: Optional[str] = None, ylabel: Optional[str] = None,
-            color: Optional[str] = None, size: Optional[str] = None, style: Optional[str] = None,
-            xticks: Optional[Dict] = None, yticks: Optional[Dict] = None
-        ) -> None:
-        df = self.data
-        plt.figure()
-
-        sns.scatterplot(data= df, x= x, y= y, hue= color, size= size, style= style)
-
-        if title:
-            plt.title(title)
-        if xlabel:
-            plt.xlabel(xlabel)
-        if ylabel:
-            plt.ylabel(ylabel)
-
-        if xticks:
-            if 'tickvals' in xticks:
-                plt.xticks(ticks=xticks['tickvals'], labels=xticks.get('labels', xticks['tickvals']))
-            if 'tickangle' in xticks:
-                plt.xticks(rotation=xticks['tickangle'])
-        if yticks:
-            if 'tickvals' in yticks:
-                plt.yticks(ticks=yticks['tickvals'], labels=yticks.get('labels', yticks['tickvals']))
-            if 'tickangle' in yticks:
-                plt.yticks(rotation=yticks['tickangle'])
-
-        plt.show()
-
-    def histogram(
-            self, x: str,
-            title: Optional[str] = None,
-            xlabel: Optional[str] = None, ylabel: Optional[str] = None,
-            color: Optional[str] = None,
-            xticks: Optional[Dict] = None, yticks: Optional[Dict] = None
-            ) -> None:
-        df = self.data
-        plt.figure()
-
-        sns.histplot(df[x], color=color)
-
-        if title:
-            plt.title(title)
-        if xlabel:
-            plt.xlabel(xlabel)
-        if ylabel:
-            plt.ylabel(ylabel)
-
-        if xticks:
-            if 'tickvals' in xticks:
-                plt.xticks(ticks=xticks['tickvals'], labels=xticks.get('labels', xticks['tickvals']))
-            if 'tickangle' in xticks:
-                plt.xticks(rotation=xticks['tickangle'])
-        if yticks:
-            if 'tickvals' in yticks:
-                plt.yticks(ticks=yticks['tickvals'], labels=yticks.get('labels', yticks['tickvals']))
-            if 'tickangle' in yticks:
-                plt.yticks(rotation=yticks['tickangle'])
-
-        plt.show()
+    def create_plots(self) -> List[go.Figure]:
+        pass
+    
