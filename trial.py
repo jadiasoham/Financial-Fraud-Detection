@@ -1,4 +1,4 @@
-from typing import Sequence, Optional, List, Dict
+from typing import Sequence, Optional, List, Dict, Union
 import pathlib
 import calendar
 import pandas as pd
@@ -21,7 +21,6 @@ COL_WITH_FRAUD_TAG = 'txn_subtype' # Name of the column containing the `FRAUD_TA
 
 class Preprocessing:
     def __init__(self, file_path: str) -> None:
-        logging.info("Initializing Preprocessing...")
         self.file = file_path
         self.data = self.open_file()
         self.fraud_data = self.generate_fraud_data()
@@ -30,12 +29,14 @@ class Preprocessing:
     def open_file(self) -> pd.DataFrame:
         file = self.file
         extension = pathlib.Path(file).suffix
-        if extension in ['.xlsx' or '.xls']:
-            return pd.read_excel(file)
-        elif extension in ['.csv']:
-            return pd.read_csv(file)
-        else:
-            raise ValueError("Invalid File Format")
+        try:
+            if extension in ['.xlsx', 'xls']:
+                df = pd.read_excel(file)
+            elif extension == '.csv':
+                df = pd.read_excel(file)
+        except Exception as e:
+            logging.error(f"Error occured while opening file: {e}.")
+            print(f"Execption occured while opening file: {e}.")
     
     @staticmethod
     def segment_day(hour) -> str:
@@ -198,7 +199,7 @@ class Visualization:
 
         fig.show()
 
-    def prepare_df(self) -> Dict[str, Optional[pd.DataFrame]]:
+    def prepare_df(self) -> Dict[str, pd.DataFrame]:
         fraudulent_data = self.data
         segments = ['EarlyMorning', 'Morning', 'LateMorning',
                     'Afternoon', 'LateAfternoon', 'Evening',
@@ -390,11 +391,28 @@ class Visualization:
         return figures
     
     def save_plots(self, filename: str) -> None:
-        figures = self.plots
+        res_html = """
+        <html>
+        <head>
+            <title>Multiple Plots</title>
+        </head>
+        <body>
+        """
+        for fig in self.plots:
+            fig_html = io.to_html(fig, full_html= False)
+            res_html += fig_html
 
-        with open(filename, 'w') as file:
-            for fig in figures:
-                logging.info(f"Saving {fig} to {filename}.")
-                file.write(pyo.plot(fig, include_plotlyjs= False, output_type= 'div'))
-        print(f"All plots have been saved to {filename}.")
-        logging.info(f"All plots have been saved to {filename}.")
+        res_html += """
+        </body>
+        </html>
+        """
+
+        with open(filename, encoding= 'utf-8') as file:
+            file.write(res_html)
+        print(f"All plots saved in {filename}.")
+        logging.info(f"All plots saved in {filename}.")
+
+
+class PrepareFeatures:
+    def __init__(self) -> None:
+        pass
