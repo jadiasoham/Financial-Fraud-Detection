@@ -411,8 +411,3 @@ class Visualization:
             file.write(res_html)
         print(f"All plots saved in {filename}.")
         logging.info(f"All plots saved in {filename}.")
-
-
-class PrepareFeatures(Preprocessing):
-    def __init__(self) -> None:
-        super().__init__()
