@@ -420,7 +420,7 @@ class Visualization:
         </html>
         """
 
-        with open(filename, encoding= 'utf-8') as file:
+        with open(filename, mode= 'w', encoding= 'utf-8') as file:
             file.write(res_html)
         print(f"All plots saved in {filename}.")
         logging.info(f"All plots saved in {filename}.")
