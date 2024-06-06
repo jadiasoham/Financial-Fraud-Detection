@@ -28,9 +28,11 @@ class Preprocessing:
         extension = pathlib.Path(file).suffix
         try:
             if extension in ['.xlsx', 'xls']:
-                df = pd.read_excel(file)
+                return pd.read_excel(file)
             elif extension == '.csv':
-                df = pd.read_excel(file)
+                return pd.read_csv(file)
+            else:
+                raise ValueError("Invalid file format.")
         except Exception as e:
             logging.error(f"Error occured while opening file: {e}.")
             print(f"Execption occured while opening file: {e}.")
@@ -66,13 +68,18 @@ class Preprocessing:
     def create_dt_feat(self, df: pd.DataFrame) -> pd.DataFrame:
         # Engineer features related to datetime:
         # Convert dt_txn_comp to pandas DateTime format:
+        logging.info("Converting column `dt_txn_comp` to pandas datetime format.")
         df['dt_txn_comp'] = pd.to_datetime(df.dt_txn_comp)
+        logging.info("Converting column `txn_comp_time` to pandas datetime format.")
         df['txn_comp_time'] = pd.to_datetime(df['txn_comp_time'], format="%H:%M:%S")
         # Extract year value from dt_txn_comp column:
+        logging.info("Extracting year value.")
         df['year'] = df.dt_txn_comp.dt.year
         # Extract month value from dt_txn_comp column:
+        logging.info("Extracting month value.")
         df['month'] = df.dt_txn_comp.dt.month
         # Extract hour of the day value from txn_comp_time:
+        logging.info("Extracting hour value.")
         df['hour'] = df.txn_comp_time.dt.hour
         df['txn_comp_time'] = df['txn_comp_time'].dt.time
         
@@ -80,11 +87,15 @@ class Preprocessing:
     
     def preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
         # Handle missing value:
+        logging.info("Filling `null` valued cells with `0`")
         df.fillna(0, inplace= True)
         
         # Engineer various features:
+        logging.info("Calculating the difference amount.")
         df = self.get_difference(df)
+        # No logging included here since it is already incorporated into the function.
         df = self.create_dt_feat(df)
+        logging.info("Segmenting time of day based on hour.")
         df = self.create_segments(df)
 
         return df
@@ -100,15 +111,19 @@ class Preprocessing:
     def generate_fraud_data(self) -> pd.DataFrame:
         df = self.data.copy()
         df = self.preprocess(df= df)
-        fraud_df = df[df.COL_WITH_FRAUD_TAG == FRAUD_TAG]
+        logging.info("Separating fraud data based on `FRAUD_TAG`.")
+        fraud_df = df[df[COL_WITH_FRAUD_TAG] == FRAUD_TAG]
         fraud_df = fraud_df.drop(columns= COL_WITH_FRAUD_TAG)
+        logging.info(f"Created fraud data with shape: {fraud_df.shape}.")
         return fraud_df
     
     def data_with_targets(self) -> pd.DataFrame:
         df = self.data.copy()
         df = self.preprocess(df= df)
+        logging.info("Identifying targets based on `FRAUD_TAG`.")
         df_with_targets = self.generate_targets(df= df)
         df_with_targets = df_with_targets.drop(columns= COL_WITH_FRAUD_TAG)
+        logging.info(f"Created data with target of shape: {df_with_targets.shape}.")
         return df_with_targets
     
 
@@ -187,49 +202,59 @@ class Visualization:
 
     def prepare_df(self) -> Dict[str, pd.DataFrame]:
         fraudulent_data = self.data
+        logging.info("Creating segments.")
         segments = ['EarlyMorning', 'Morning', 'LateMorning',
                     'Afternoon', 'LateAfternoon', 'Evening',
                     'Night', 'LateNight']
         # (loss_amt vs. payee_state)/ 2 plots
         # df1:
+        logging.info("Creating df1.")
         df1 = fraudulent_data.groupby('payee_state')['payee_settlement_amount'].sum().reset_index()
         df1['loss_amount_(in_lakhs)'] = np.round(df1.payee_settlement_amount / 1e5, 2)
         df1.drop(columns='payee_settlement_amount', inplace=True)
         df1.sort_values(by='loss_amount_(in_lakhs)', ascending=False, inplace=True)
         # (loss amount monthly trends separately and cumulatively)/ 4 plots
         # df2:
+        logging.info("Creating df2.")
         df2 = fraudulent_data.groupby(['year', 'month'])['payee_settlement_amount'].sum().reset_index()
         df2['loss_amt_(in_lakhs)'] = np.round(df2['payee_settlement_amount'] / 1e5, 2)
         df2.drop(columns='payee_settlement_amount', inplace=True)
         df2.sort_values(by='loss_amt_(in_lakhs)', ascending=False)
         # df3:
+        logging.info("Creating df3.")
         df3 = fraudulent_data.groupby('month')['payee_settlement_amount'].sum().reset_index()
         df3['loss_amt_(in_lakhs)'] = np.round(df3['payee_settlement_amount'] / 1e5, 2)
         df3.drop(columns='payee_settlement_amount', inplace=True)
         df3.sort_values(by='loss_amt_(in_lakhs)', ascending=False)
         # df4:
+        logging.info("Creating df4.")
         df4 = fraudulent_data.groupby(['year', 'month']).size().reset_index(name='fraud_counts')
         # df5:
+        logging.info("Creating df5.")
         df5 = fraudulent_data.groupby('month').size().reset_index(name='fraud_counts')
         # (loss amount by credit account type)/ 1 plot
         # df6:
+        logging.info("Creating df6.")
         df6 = fraudulent_data.groupby('cred_type')['payee_settlement_amount'].sum().reset_index()
         df6['loss_amt_(in_lakhs)'] = np.round(df6.payee_settlement_amount / 1e5, 2)
         df6.drop(columns='payee_settlement_amount', inplace=True)
         # (loss amount by time of day)/ 3 plots
         # df7:
+        logging.info("Creating df7.")
         df7 = fraudulent_data.groupby('time_of_day')['payee_settlement_amount'].sum().reset_index()
         df7['loss_amt_(in_lakhs)'] = np.round(df7.payee_settlement_amount / 1e5, 2)
         df7.drop(columns='payee_settlement_amount', inplace=True)
         df7['time_of_day'] = pd.Categorical(df7['time_of_day'], categories=segments, ordered=True)
         df7.sort_values('time_of_day', inplace=True)
         # df8:
+        logging.info("Creating df8.")
         df8 = fraudulent_data.groupby('time_of_day')['difference_amount'].sum().reset_index()
         df8['diff_amt_(in_lakhs)'] = np.round(df8['difference_amount'] / 1e5, 2)
         df8.drop(columns='difference_amount', inplace=True)
         df8['time_of_day'] = pd.Categorical(df8['time_of_day'], categories=segments, ordered=True)
         df8.sort_values('time_of_day', inplace=True)
         # df9:
+        logging.info("Creating df9.")
         underpayments = fraudulent_data[fraudulent_data.difference_amount > 0].groupby('time_of_day')[
             'difference_amount'].sum().reset_index()
         underpayments['difference_amount_(in_lakhs)'] = np.round(underpayments.difference_amount / 1e5, 3)
@@ -251,10 +276,11 @@ class Visualization:
                     'df4': df4, 'df5': df5, 'df6': df6,
                     'df7': df7, 'df8': df8, 'df9': df9,
                     'segments': segments}
+        logging.info("Returning all the df as a dictionary as `df_viz_dict`.")
         return viz_dict
         
     def create_plots(self) -> List[go.Figure]:
-        logging.info("Extracting relevant dataframes from master dataframe.")
+        logging.info("Extracting relevant dataframes from `df_viz_dict`.")
         df_dict = self.df_viz_dict
         df1 = df_dict["df1"]
         df2 = df_dict["df2"]
@@ -384,6 +410,7 @@ class Visualization:
         </head>
         <body>
         """
+        logging.info("Converting plots to html")
         for fig in self.plots:
             fig_html = io.to_html(fig, full_html= False)
             res_html += fig_html
