@@ -78,18 +78,7 @@ class Preprocessing:
         # Extract hour of the day value from txn_comp_time:
         df['hour'] = df.txn_comp_time.dt.hour
         df['txn_comp_time'] = df['txn_comp_time'].dt.time
-        # Rearrange the columns:
-        df = df[['txn_id', 'dt_txn_comp', 'year', 'month', 'txn_comp_time', 'hour', 'txn_type',
-                'txn_subtype', 'initiating_channel_id', 'txn_status', 'error_code',
-                'payer_psp', 'payee_psp', 'remitter_bank', 'beneficiary_bank',
-                'payer_handle', 'payer_app', 'payee_handle', 'payee_app',
-                'payee_requested_amount', 'payee_settlement_amount',
-                'difference_amount', 'payer_location', 'payer_city', 'payer_state',
-                'payee_location', 'payee_city', 'payee_state', 'payer_os_type',
-                'payee_os_type', 'beneficiary_mcc_code', 'remitter_mcc_code',
-                'custref_transaction_ref', 'cred_type', 'cred_subtype',
-                'payer_app_id', 'payee_app_id', 'initiation_mode',
-                'dt_time_txn_compl', 'time_of_day']]
+        
         return df
     
     def preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
