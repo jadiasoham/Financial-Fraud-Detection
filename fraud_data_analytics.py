@@ -3,7 +3,6 @@ import pathlib
 import calendar
 import pandas as pd
 import numpy as np
-from imblearn.over_sampling import SMOTE
 from plotly import express as px
 from plotly import graph_objects as go
 from plotly import io
