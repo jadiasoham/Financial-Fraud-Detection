@@ -37,7 +37,7 @@ class Preprocessing:
             print(f"Execption occured while opening file: {e}.")
     
     @staticmethod
-    def segment_day(hour) -> str:
+    def segment_day(hour: int) -> str:
         if 0 <= hour < 3:
             return 'LateNight'
         elif 3 <= hour < 6:
